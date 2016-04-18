@@ -97,8 +97,18 @@ void SDLWindow::run()
 
 
   // compiling shaders
+  //https://open.gl/drawing
   GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertShader, 1, vertShader.c_str, NULL);
+  glShaderSource(vertShader, 1, &vertShaderSrc.c_str(), NULL);
+  glCompileShader(vertShader);
+  GLint status;
+  glGetShaderiv(vertShader, GL_COMPILE_STATUS, &status);
+  if (!status)
+  {
+    char buffer[512];
+    glGetShaderInfoLog(vertShader, 512, NULL, buffer);
+    std::cout << buffer << std::endl;
+  }
 
 
 
