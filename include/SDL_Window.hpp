@@ -5,6 +5,7 @@
 #include <string>
 
 #include "SDL2/SDL.h"
+#include "ngl/Util.h"
 
 class SDLWindow
 {
@@ -13,6 +14,7 @@ public:
   void run();
 private:
   void init();
+  GLuint loadShaderSrc(std::string _fileName);
   void keyUp();
   void keyDown();
 

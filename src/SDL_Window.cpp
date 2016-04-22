@@ -51,64 +51,45 @@ void SDLWindow::run()
   SDL_GL_SwapWindow(m_window);
 
 
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
   //vertex data
   std::vector<ngl::Vec2> verts;
   verts.push_back(ngl::Vec2(0, 0.5));
   verts.push_back(ngl::Vec2(0.5, -0.5));
   verts.push_back(ngl::Vec2(-0.5, -0.5));
 
+  float verticies[6] = {0, 0.5,
+                    0.5, -0.5,
+                    -0.5, -0.5};
+
 
   GLuint vbo;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER,
-               verts.size() * sizeof(ngl::Vec2),
-               &verts[0],
+               sizeof(verticies),
+               verticies,
                GL_STATIC_DRAW);
 
   //shader shit
-  std::ifstream vertShaderFile;
-  std::ifstream fragShaderFile;
-  vertShaderFile.open("shaders/vertexShader.glsl");
-  fragShaderFile.open("shaders/fragShader.glsl");
+  GLuint shaderProg = glCreateProgram();
+  GLuint vertShader = loadShaderSrc("shaders/vertShader.glsl");
+  GLuint fragShader = loadShaderSrc("shaders/fragShader.glsl");
+  glAttachShader(shaderProg, vertShader);
+  glAttachShader(shaderProg, fragShader);
+  glLinkProgram(shaderProg);
+  glUseProgram(shaderProg);
 
-  std::string vertShaderSrc("");
-  std::string fragShaderSrc("");
-
-  if(vertShaderFile.is_open())
-  {
-    std::string line;
-    while(std::getline(vertShaderFile, line))
-    {
-      vertShaderSrc += line;
-    }
-    vertShaderFile.close();
-  }
-
-  if(fragShaderFile.is_open())
-  {
-    std::string line;
-    while(std::getline(fragShaderFile, line))
-    {
-      fragShaderSrc += line;
-    }
-    fragShaderFile.close();
-  }
+  GLint posAttrib = glGetAttribLocation(shaderProg, "position");
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(posAttrib);
 
 
-  // compiling shaders
-  //https://open.gl/drawing
-  GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertShader, 1, &vertShaderSrc.c_str(), NULL);
-  glCompileShader(vertShader);
-  GLint status;
-  glGetShaderiv(vertShader, GL_COMPILE_STATUS, &status);
-  if (!status)
-  {
-    char buffer[512];
-    glGetShaderInfoLog(vertShader, 512, NULL, buffer);
-    std::cout << buffer << std::endl;
-  }
+
+
 
 
 
@@ -134,6 +115,7 @@ void SDLWindow::run()
     case SDL_KEYUP: keyUp(); break;
     case SDL_KEYDOWN: keyDown(); break;
     }
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     SDL_GL_SwapWindow(m_window);
   }
 
@@ -165,6 +147,32 @@ SDL_GLContext SDLWindow::createGLContext()
   // enable double buffering (should be on by default)
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   return SDL_GL_CreateContext(m_window);
+}
+
+GLuint SDLWindow::loadShaderSrc(std::string _fileName)
+{
+    std::ifstream shaderFile;
+    shaderFile.open(_fileName);
+
+    std::string shaderSrc = std::string(std::istreambuf_iterator<char>(shaderFile),
+                                        std::istreambuf_iterator<char>()) + "\0";
+    const char * shaderSrcC = shaderSrc.c_str();
+
+    // compiling shaders
+    GLuint shader = glCreateShader(GL_VERTEX_SHADER);
+
+    glShaderSource(shader, 1, &shaderSrcC, NULL);
+    glCompileShader(shader);
+    GLint status;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (!status)
+    {
+      char buffer[512];
+      glGetShaderInfoLog(shader, 512, NULL, buffer);
+      std::cout << buffer << std::endl;
+    }
+    shaderFile.close();
+    return shader;
 }
 
 void SDLWindow::keyUp()
